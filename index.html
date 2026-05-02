@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title data-i18n="app_title">NetEase MC 工具桌面</title>
+    <link rel="stylesheet" href="./res/style.css">
+    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+</head>
+
+<body class="win-desktop">
+    <div class="desktop-shell">
+        <aside class="desktop-icons" aria-label="Desktop shortcuts">
+            <button class="desktop-shortcut active-shortcut" id="decryptorShortcut" data-open-window="decryptorWindow">
+                <span class="desktop-shortcut-icon">
+                    <img src="./res/icons/NetEaseMC.ico" alt="Decryptor">
+                </span>
+                <span class="desktop-shortcut-label" data-i18n="desktop_icon_decryptor">MC中国版地图解密</span>
+            </button>
+            <button class="desktop-shortcut" id="nbtShortcut" data-open-window="nbtAppWindow">
+                <span class="desktop-shortcut-icon">
+                    <img src="./res/icons/NBTExplorer_Icon.png" alt="NBT Editor">
+                </span>
+                <span class="desktop-shortcut-label" data-i18n="desktop_icon_nbt">NBT 编辑器</span>
+            </button>
+        </aside>
+
+        <main class="desktop-workspace">
+            <section class="win-window app-window desktop-app active-window" id="decryptorWindow">
+                <header class="win-title-bar app-window-title">
+                    <div class="win-title-text">
+                        <img src="./res/icons/NetEaseMC.ico" alt="Decryptor" class="title-icon">
+                        <span data-i18n="window_decryptor_title">MC中国版地图解密</span>
+                    </div>
+                    <div class="win-title-controls">
+                        <button class="win-btn win-btn-sm window-minimize" type="button" data-target-window="decryptorWindow">_</button>
+                        <button class="win-btn win-btn-sm window-toggle" type="button" data-target-window="decryptorWindow">□</button>
+                        <button class="win-btn win-btn-sm win-btn-close window-close" type="button" data-target-window="decryptorWindow">X</button>
+                    </div>
+                </header>
+
+                <div class="win-window-body app-window-body">
+                    <div class="app-hero">
+                        <div class="hero-mark">
+                            <img src="./res/icons/NetEaseMC.ico" alt="MC Tool">
+                        </div>
+                        <div>
+                            <h1 class="hero-title" data-i18n="decryptor_heading">网易版世界解密工作台</h1>
+                            <p class="hero-copy" data-i18n="decryptor_subtitle">拖入 mcworld / zip 存档包，或者直接连接世界文件夹，提取并修复 db 中的加密内容。</p>
+                        </div>
+                    </div>
+
+                    <div class="app-grid">
+                        <div class="pane-stack">
+                            <fieldset class="win-fieldset">
+                                <legend data-i18n="decrypt_input_legend">1. 存档来源</legend>
+                                <div class="win-sunken-box drop-area" id="uploadArea">
+                                    <div class="drop-area-title" data-i18n="decrypt_upload_title">拖拽 MCWORLD / ZIP 到这里</div>
+                                    <div class="drop-area-copy" data-i18n="decrypt_upload_hint">也可以选择完整导出的世界压缩包，或直接连接包含 db 的存档文件夹。</div>
+                                    <input type="file" id="fileInput" class="hidden-input" accept=".zip,.mcworld">
+                                    <div class="btn-row">
+                                        <button id="browseBtn" class="win-btn" type="button" data-i18n="btn_browse_archive">选择 MCWORLD / ZIP</button>
+                                        <button id="fsApiBtn" class="win-btn hidden-btn" type="button" data-i18n="btn_browse_folder">连接存档文件夹</button>
+                                    </div>
+                                    <div id="apiNoteContainer" class="api-note-box"></div>
+                                </div>
+
+                                <div class="file-label" data-i18n="selected_target">当前目标：</div>
+                                <div class="win-sunken-box file-info-box" id="fileInfo" data-i18n="file_info_empty">未选择文件</div>
+                            </fieldset>
+
+                            <fieldset class="win-fieldset">
+                                <legend data-i18n="decrypt_actions_legend">2. 执行操作</legend>
+                                <div class="actions-stack">
+                                    <button id="processBtn" class="win-btn btn-primary" type="button" disabled data-i18n="btn_start_decrypt">开始解密</button>
+                                    <button id="openNbtBtn" class="win-btn btn-secondary" type="button" disabled data-i18n="btn_open_nbt">打开 NBT 编辑器</button>
+                                    <a id="downloadBtn" class="win-btn btn-success hidden-btn" data-i18n="btn_download">下载解密后的存档</a>
+                                </div>
+                            </fieldset>
+                        </div>
+
+                        <fieldset class="win-fieldset status-fieldset">
+                            <legend data-i18n="decrypt_status_legend">系统状态</legend>
+                            <div class="status-header">
+                                <span data-i18n="progress_title">处理进度</span>
+                                <span id="progressText">0%</span>
+                            </div>
+                            <progress id="progressBar" class="win-progress" value="0" max="100"></progress>
+                            <div class="file-label" data-i18n="log_output">日志输出：</div>
+                            <div class="win-sunken-box log-box" id="status" aria-live="polite" data-i18n="status_waiting">等待操作...</div>
+                        </fieldset>
+                    </div>
+                </div>
+
+                <footer class="win-status-bar desktop-status-bar">
+                    <div class="status-panel" data-i18n="window_status_ready">就绪</div>
+                    <div class="status-panel"><a href="https://github.com/XiaoFeng-QWQ/NetEaseMC-Decryptor" target="_blank" rel="noopener noreferrer" data-i18n="footer_github">GitHub 仓库</a></div>
+                    <div class="status-panel">GPLv3</div>
+                </footer>
+            </section>
+
+            <section class="win-window app-window desktop-app desktop-app-side" id="nbtAppWindow">
+                <header class="win-title-bar app-window-title">
+                    <div class="win-title-text">
+                        <img src="./res/icons/NBTExplorer_Icon.png" alt="NBT" class="title-icon">
+                        <span data-i18n="window_nbt_title">NBT 编辑器</span>
+                    </div>
+                    <div class="win-title-controls">
+                        <button class="win-btn win-btn-sm window-minimize" type="button" data-target-window="nbtAppWindow">_</button>
+                        <button class="win-btn win-btn-sm window-toggle" type="button" data-target-window="nbtAppWindow">□</button>
+                        <button class="win-btn win-btn-sm win-btn-close window-close" type="button" data-target-window="nbtAppWindow">X</button>
+                    </div>
+                </header>
+
+                <div class="win-window-body app-window-body">
+                    <div class="app-hero compact-hero">
+                        <div class="hero-mark">
+                            <img src="./res/icons/NBTExplorer_Icon.png" alt="NBT">
+                        </div>
+                        <div>
+                            <h2 class="hero-title" data-i18n="nbt_heading">NBT 文件工作台</h2>
+                            <p class="hero-copy" data-i18n="nbt_subtitle">支持直接打开 level.dat，也支持从 mcworld / zip 中提取 level.dat 进入编辑。</p>
+                        </div>
+                    </div>
+
+                    <div class="nbt-grid">
+                        <div class="pane-stack">
+                            <fieldset class="win-fieldset">
+                                <legend data-i18n="nbt_input_legend">1. 导入文件</legend>
+                                <div class="win-sunken-box drop-area nbt-drop-area" id="nbtUploadArea">
+                                    <div class="drop-area-title" data-i18n="nbt_upload_title">拖拽 level.dat / MCWORLD / ZIP 到这里</div>
+                                    <div class="drop-area-copy" data-i18n="nbt_upload_hint">单独编辑 level.dat，或者从存档压缩包中自动提取 level.dat 再进入编辑。</div>
+                                    <input type="file" id="nbtFileInput" class="hidden-input" accept=".dat,.nbt,.zip,.mcworld,application/octet-stream">
+                                    <div class="btn-row">
+                                        <button id="browseNbtBtn" class="win-btn" type="button" data-i18n="btn_import_nbt">导入 NBT / 存档包</button>
+                                    </div>
+                                </div>
+                                <div class="file-label" data-i18n="selected_target">当前目标：</div>
+                                <div class="win-sunken-box file-info-box" id="nbtFileInfo" data-i18n="file_info_empty">未选择文件</div>
+                            </fieldset>
+
+                            <fieldset class="win-fieldset">
+                                <legend data-i18n="nbt_actions_legend">2. 编辑与导出</legend>
+                                <div class="actions-stack">
+                                    <button id="launchNbtEditorBtn" class="win-btn btn-primary" type="button" disabled data-i18n="btn_open_nbt">打开 NBT 编辑器</button>
+                                    <a id="nbtDownloadBtn" class="win-btn btn-success hidden-btn" data-i18n="btn_download_nbt">下载修改后的文件</a>
+                                </div>
+                            </fieldset>
+                        </div>
+
+                        <fieldset class="win-fieldset nbt-session">
+                            <legend data-i18n="nbt_status_legend">会话状态</legend>
+                            <div class="session-card">
+                                <div class="session-card-title" data-i18n="nbt_supported_formats_title">支持格式</div>
+                                <div class="session-card-copy" data-i18n="nbt_supported_formats">level.dat、.dat、.nbt、.mcworld、.zip</div>
+                            </div>
+                            <div class="session-card">
+                                <div class="session-card-title" data-i18n="log_output">日志输出：</div>
+                                <div class="win-sunken-box mini-log-box" id="nbtStatus" data-i18n="nbt_status_waiting">等待导入 level.dat、mcworld 或 zip...</div>
+                            </div>
+                            <div class="session-footer" data-i18n="nbt_footer_hint">打开压缩包时会自动定位其中的 level.dat</div>
+                        </fieldset>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <footer class="taskbar">
+        <button class="taskbar-start" type="button" data-i18n="taskbar_start">开始</button>
+        <div class="taskbar-buttons">
+            <button class="taskbar-app active-task" id="decryptorTaskBtn" type="button" data-open-window="decryptorWindow" data-i18n="task_decryptor">地图解密</button>
+            <button class="taskbar-app" id="nbtTaskBtn" type="button" data-open-window="nbtAppWindow" data-i18n="task_nbt">NBT 编辑器</button>
+        </div>
+        <div class="taskbar-tray">
+            <div class="tray-menu-group" id="langMenu">
+                <button class="tray-btn tray-menu-trigger" type="button" data-i18n="tray_language">Language</button>
+                <div class="tray-dropdown">
+                    <button type="button" data-lang="zh" class="tray-dropdown-item language-item">中文 (Chinese)</button>
+                    <button type="button" data-lang="en" class="tray-dropdown-item language-item">English</button>
+                </div>
+            </div>
+            <button class="tray-btn" id="trayAboutBtn" type="button" data-i18n="tray_about">关于</button>
+        </div>
+    </footer>
+
+    <dialog id="aboutDialog" class="win-dialog about-dialog">
+        <div class="win-title-bar">
+            <span data-i18n="dialog_headline">关于这个工具桌面</span>
+            <button class="win-btn win-btn-sm win-btn-close" type="button" onclick="document.getElementById('aboutDialog').close()">X</button>
+        </div>
+        <div class="win-dialog-body">
+            <div class="about-top">
+                <img src="favicon.ico" onerror="this.style.display='none'" alt="App Icon" class="about-icon">
+                <div>
+                    <h3 data-i18n="dialog_welcome">这里把解密器和 NBT 编辑器做成了 Windows 95 风格桌面，所有处理仍然完全在浏览器本地完成。</h3>
+                    <hr class="win-hr">
+                    <p><a href="https://github.com/XiaoFeng-QWQ/NetEaseMC-Decryptor" target="_blank" rel="noopener noreferrer">开源地址</a></p>
+                </div>
+            </div>
+
+            <fieldset class="win-fieldset warning-fieldset">
+                <legend data-i18n="dialog_warning_title">使用提醒</legend>
+                <ul class="warning-list">
+                    <li data-i18n="dialog_warning_1">使用“连接存档文件夹”时会直接覆盖原文件，尤其是 <code>db</code> 目录，请先备份。</li>
+                    <li data-i18n="dialog_warning_2">无论是解密还是 NBT 编辑，文件都不会上传到服务器。</li>
+                </ul>
+            </fieldset>
+
+            <div class="win-sunken-box about-paths">
+                <strong data-i18n="dialog_path_title">常见世界位置：</strong>
+                <p data-i18n="dialog_path_mobile"><b>手机端：</b><br><code style="user-select: auto;">/storage/emulated/0/Android/data/com.netease.x19/files/minecraftWorlds/</code></p>
+                <p data-i18n="dialog_path_pc"><b>电脑端：</b> 开始游戏 → 选择游戏 → 导出到本地</p>
+            </div>
+        </div>
+        <div class="win-dialog-footer">
+            <button class="win-btn" type="button" data-i18n="btn_understood" onclick="document.getElementById('aboutDialog').close()">我知道了</button>
+        </div>
+    </dialog>
+
+    <dialog id="nbtDialog" class="win-dialog nbt-editor-dialog">
+        <div class="win-title-bar">
+            <span data-i18n="nbt_dialog_title">NBT 编辑器</span>
+            <button class="win-btn win-btn-sm win-btn-close" type="button" onclick="document.getElementById('nbtDialog').close()">X</button>
+        </div>
+        <div class="win-window-body nbt-dialog-body" id="nbtContainer"></div>
+        <div class="win-dialog-footer">
+            <button class="win-btn" id="nbtSaveApply" type="button" data-i18n="btn_apply_close">应用修改并关闭</button>
+            <button class="win-btn" type="button" data-i18n="btn_cancel" onclick="document.getElementById('nbtDialog').close()">取消</button>
+        </div>
+    </dialog>
+
+    <script type="module" src="./res/script.js"></script>
+</body>
+
+</html>
